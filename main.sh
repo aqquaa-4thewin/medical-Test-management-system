@@ -44,6 +44,10 @@ menu(){
     echo " 7- exit"
 }
 
+search_menu(){
+    printf "\n 1-Retrieve all patient tests\n 2-Retrieve all up normal patient tests\n 3-Retrieve all patient tests in a given specific period\n 4-Retrieve all patient tests based on test status"
+}
+
 Add(){ # Handeling !!!!!
 
     # while [ 0 -eq 0 ]
@@ -98,17 +102,90 @@ update(){
     cat -n temp.txt
     printf "\n choose a test: "
     read choice
+
     record=$(sed -n "${choice}p" temp.txt)
     echo "$record" > temp.txt
     printf "\n Enter new result: "
     read newresult
+
     result=$(echo "$record" | cut -d":" -f2 | cut -d"," -f3 | xargs)
     newrecord=$(sed "s/$result/$newresult/g" temp.txt)
-   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # Update the record in medicalRecord.txt
-    sed -i "s/$result_escaped/$newresult_escaped/" medicalRecord.txt
+    grep -vF "$record" medicalRecord.txt > temp.txt
+    echo "$newrecord" >> temp.txt
+    printf "%s" "$(cat temp.txt)" > medicalRecord.txt # to remove new line with copy
+}
 
-    #cat temp.txt > medicalRecord.txt
+search_id(){
+    printf "\n enter patient ID: "
+    read id
+    search_menu
+    printf "\n choose an option:  "
+    read  choice
+    case $choice in
+        "1")
+        print_by_ID "$id"
+        ;;
+        "2")
+        ;;
+        "3")
+        print_in_period "$id"
+        ;;
+        "4")
+        print_by_status "$id"
+        ;;
+        *)
+        echo " invalid option !!";;
+    esac
+
+}
+print_by_ID(){
+    id=$1
+    printf "\n Patient tests are:\n"
+    grep  "$id" medicalRecord.txt 
+    
+
+}
+print_by_status(){
+    id=$1
+    grep  $id medicalRecord.txt > temp.txt
+    printf '\n Enter status: (Pending", Completed, Reviewed)'
+    read status
+    grep "$status" temp.txt
+    
+
+}
+
+print_in_period(){
+    id=$1
+    grep  $id medicalRecord.txt > temp.txt
+    printf "\n Enter first Date: "
+    read DateFrom
+    YFrom=$(echo "$DateFrom" | cut -d"-" -f1)
+    MFrom=$(echo "$DateFrom" | cut -d"-" -f2)
+
+    printf "\n Enter second Date: "
+    read DateTo
+    YTo=$(echo "$DateTo" | cut -d"-" -f1)
+    MTo=$(echo "$DateTo" | cut -d"-" -f2)
+    printf "\n"
+
+
+    while IFS= read -r line; do
+        Y=$(echo "$line" | cut -d":" -f2 | cut -d"," -f2 | xargs | cut -d"-" -f1)
+        M=$(echo "$line" | cut -d":" -f2 | cut -d"," -f2 | xargs | cut -d"-" -f2)
+         if [ "$Y" -lt "$YFrom" ] || [ "$Y" -gt "$YTo" ] ||
+           { [ "$Y" -eq "$YFrom" ] && [ "$M" -lt "$MFrom" ]; } ||
+           { [ "$Y" -eq "$YTo" ] && [ "$M" -gt "$MTo" ]; }; then
+            continue
+        fi
+
+        echo "$line"
+
+
+    done < temp.txt
+
+
+
 }
 
 ##### code starts
@@ -119,15 +196,17 @@ do
     case $x in
         "1")
         Add
-        sleep 3
+        sleep 2
         ;;
         "2")
+        search_id
+        sleep 2
         ;;
         "3")
         ;;
         "4")
         Avg
-        sleep 3
+        sleep 2
         ;;
         "5")
         update
