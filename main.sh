@@ -1,37 +1,67 @@
 #!/bin/bash
-echo "Testing bash scripting"
+
 
 
 
 # Read the file line by line
-while IFS= read -r line; do
-    PatientID=$(echo "$line" | cut -d":" -f1 | xargs)
-    TestName=$(echo "$line" | cut -d":" -f2 | cut -d"," -f1 | xargs)
-    Testdate=$(echo "$line" | cut -d":" -f2 | cut -d"," -f2 | xargs)
-    PatientResult=$(echo "$line" | cut -d":" -f2 | cut -d"," -f3 | xargs)
-    Testunit=$(echo "$line" | cut -d":" -f2 | cut -d"," -f4 | xargs)
-    Teststatus=$(echo "$line" | cut -d":" -f2 | cut -d"," -f5 | xargs)
+# while IFS= read -r line; do
+#     PatientID=$(echo "$line" | cut -d":" -f1 | xargs)
+#     TestName=$(echo "$line" | cut -d":" -f2 | cut -d"," -f1 | xargs)
+#     Testdate=$(echo "$line" | cut -d":" -f2 | cut -d"," -f2 | xargs)
+#     PatientResult=$(echo "$line" | cut -d":" -f2 | cut -d"," -f3 | xargs)
+#     Testunit=$(echo "$line" | cut -d":" -f2 | cut -d"," -f4 | xargs)
+#     Teststatus=$(echo "$line" | cut -d":" -f2 | cut -d"," -f5 | xargs)
 
-done < medicalRecord.txt
+# done < medicalRecord.txt
 
 
 
-readMedicalTests(){
+# readMedicalTests(){
 
-    while IFS= read -r line; do
-    symbol=$(echo "$line" | cut -d";" -f1 | cut -d"(" -f2 | cut -d")" -f1 | xargs)
-    TestName=$(echo "$line" | cut -d";" -f1 | cut -d"(" -f1 | xargs)
-    upperRange=$(echo "$line" | sed -n 's/.*< \([0-9.]*\).*/\1/p')
-    lowerRange=$(echo "$line" | sed -n 's/.*> \([0-9.]*\),.*/\1/p')
-    Testunit=$(echo "$line" | cut -d":" -f2 | cut -d"," -f4 | xargs)
+#     while IFS= read -r line; do
+#     symbol=$(echo "$line" | cut -d";" -f1 | cut -d"(" -f2 | cut -d")" -f1 | xargs)
+#     TestName=$(echo "$line" | cut -d";" -f1 | cut -d"(" -f1 | xargs)
+#     upperRange=$(echo "$line" | sed -n 's/.*< \([0-9.]*\).*/\1/p')
+#     lowerRange=$(echo "$line" | sed -n 's/.*> \([0-9.]*\),.*/\1/p')
+#     Testunit=$(echo "$line" | cut -d":" -f2 | cut -d"," -f4 | xargs)
 
-    # Declare an associative array for the person
+#     # Declare an associative array for the person
     
 
-    # Serialize the associative array and store it in the main records array
+#     # Serialize the associative array and store it in the main records array
+# done < medicalTest.txt
+
+# }
+
+
+declare -A normal_ranges 
+
+# Read the test ranges from the file and populate the associative array
+while IFS= read -r line || [ -n "$line" ]; do
+    # Extract test name
+    test_name=$(echo "$line" | grep -oP '(?<=\().*(?=\))')
+    
+    # Extract range
+    range=$(echo "$line" | grep -oP '(?<=Range: ).*(?=; Unit)')
+    
+    lower_limit=$(echo "$range" | grep -oP '(?<=\> )[^,]*' | xargs)
+    upper_limit=$(echo "$range" | grep -oP '(?<=< )[^,]*' | xargs)
+
+    if [ -z "$lower_limit" ]; then
+        lower_limit=0
+    fi
+
+    if [ -z "$upper_limit" ]; then
+        upper_limit=9999  # Or any large value 
+    fi
+
+    normal_ranges["$test_name"]="$lower_limit $upper_limit"
 done < medicalTest.txt
 
-}
+
+
+
+
 menu(){
     echo -e "\n  ==Welcome to the Medical Test Managment System== "
     echo "  choose an operation by number:"
@@ -126,6 +156,7 @@ search_id(){
         print_by_ID "$id"
         ;;
         "2")
+        Abnormal_ID "$id"
         ;;
         "3")
         print_in_period "$id"
@@ -145,6 +176,8 @@ print_by_ID(){
     
 
 }
+
+
 print_by_status(){
     id=$1
     grep  $id medicalRecord.txt > temp.txt
@@ -184,9 +217,64 @@ print_in_period(){
 
     done < temp.txt
 
+}
 
+Abnormal_ID(){
+    id=$1
+    records=$(grep "^$id:" medicalRecord.txt)
+    
+    if [ -z "$records" ]; then # handling if no records found for patient
+        echo "No records found for patient ID $id."
+        return
+    fi
+    
+    echo "Abnormal tests for patient ID $id:"
+    while IFS= read -r record; do # loop over record of patient
+        test_name=$(echo "$record" | cut -d',' -f1 | cut -d':' -f2 | xargs) # test name
+        test_result=$(echo "$record" | cut -d',' -f3 | xargs) # test result
+    
+        range="${normal_ranges[$test_name]}" # ranges are taken from associative array
+        # divide ranges into upper and lower
+        lower_limit=$(echo $range | cut -d' ' -f1) 
+        upper_limit=$(echo $range | cut -d' ' -f2)
+
+          # compare test result with normal ranges of each test type, then print Abnormal
+        if (( $(echo "$test_result < $lower_limit" | bc -l) )) || (( $(echo "$test_result > $upper_limit" | bc -l) )); then
+            echo "$record"
+        fi
+    done <<< "$records"
 
 }
+
+search_Abnormal_by_testname(){
+    printf "\n enter Test name: "
+    read name
+    records=$(grep "$name" medicalRecord.txt)
+
+    if [ -z "$records" ]; then # handling if no records found 
+        echo "No records found for Test name $id."
+        return
+    fi
+
+    echo  " Abnormal tests for $name are:"
+
+    while IFS= read -r record; do # loop over record of patient
+        test_name=$(echo "$record" | cut -d',' -f1 | cut -d':' -f2 | xargs) # test name
+        test_result=$(echo "$record" | cut -d',' -f3 | xargs) # test result
+    
+        range="${normal_ranges[$test_name]}" # ranges are taken from associative array
+        # divide ranges into upper and lower
+        lower_limit=$(echo $range | cut -d' ' -f1) 
+        upper_limit=$(echo $range | cut -d' ' -f2)
+
+          # compare test result with normal ranges of each test type, then print Abnormal
+        if (( $(echo "$test_result < $lower_limit" | bc -l) )) || (( $(echo "$test_result > $upper_limit" | bc -l) )); then
+            echo "$record"
+        fi
+    done <<< "$records"
+
+}
+
 
 ##### code starts
 while [ 0 -eq 0 ]
@@ -203,6 +291,8 @@ do
         sleep 2
         ;;
         "3")
+        search_Abnormal_by_testname
+        sleep 2
         ;;
         "4")
         Avg
