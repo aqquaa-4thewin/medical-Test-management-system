@@ -1,0 +1,2 @@
+1300003:diastole,2024-03,13.5,mg/dl,completed
+1300003:diastole,2024-03,13.5,mg/dl,completed
