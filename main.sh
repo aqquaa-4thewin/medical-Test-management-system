@@ -1,41 +1,12 @@
 #!/bin/bash
 
-
-
-
-# Read the file line by line
-# while IFS= read -r line; do
-#     PatientID=$(echo "$line" | cut -d":" -f1 | xargs)
-#     TestName=$(echo "$line" | cut -d":" -f2 | cut -d"," -f1 | xargs)
-#     Testdate=$(echo "$line" | cut -d":" -f2 | cut -d"," -f2 | xargs)
-#     PatientResult=$(echo "$line" | cut -d":" -f2 | cut -d"," -f3 | xargs)
-#     Testunit=$(echo "$line" | cut -d":" -f2 | cut -d"," -f4 | xargs)
-#     Teststatus=$(echo "$line" | cut -d":" -f2 | cut -d"," -f5 | xargs)
-
-# done < medicalRecord.txt
-
-
-
-# readMedicalTests(){
-
-#     while IFS= read -r line; do
-#     symbol=$(echo "$line" | cut -d";" -f1 | cut -d"(" -f2 | cut -d")" -f1 | xargs)
-#     TestName=$(echo "$line" | cut -d";" -f1 | cut -d"(" -f1 | xargs)
-#     upperRange=$(echo "$line" | sed -n 's/.*< \([0-9.]*\).*/\1/p')
-#     lowerRange=$(echo "$line" | sed -n 's/.*> \([0-9.]*\),.*/\1/p')
-#     Testunit=$(echo "$line" | cut -d":" -f2 | cut -d"," -f4 | xargs)
-
-#     # Declare an associative array for the person
-    
-
-#     # Serialize the associative array and store it in the main records array
-# done < medicalTest.txt
-
-# }
-
+#Shell scripting Project##
+#Prepared by:
+#Talin abu zulof 121
+#Mayar Jafar 1210582
+#Section " "
 
 declare -A normal_ranges 
-
 # Read the test ranges from the file and populate the associative array
 while IFS= read -r line || [ -n "$line" ]; do
     # Extract test name
@@ -56,26 +27,26 @@ while IFS= read -r line || [ -n "$line" ]; do
     fi
 
     normal_ranges["$test_name"]="$lower_limit $upper_limit"
-done < medicalTest.txt
+ done < medicalTest.txt
 
 
 
 
 
 menu(){
-    echo -e "\n  ==Welcome to the Medical Test Managment System== "
-    echo "  choose an operation by number:"
+    echo -e "\n  == Welcome to the Medical Test Managment System == "
+    echo "  Choose an operation by number:"
     echo " 1- Add a new medical test record"
-    echo " 2- search for a patient by ID"
-    echo " 3- search for abnormal tests for a test type"
-    echo " 4- find average test value for a test type"
+    echo " 2- Search for a patient by ID"
+    echo " 3- Search for abnormal tests for a test type"
+    echo " 4- Find average test value for a test type"
     echo " 5- Update a test"
     echo " 6- Print All"
-    echo " 7- exit"
+    echo " 7- Exit"
 }
 
 search_menu(){
-    printf "\n 1-Retrieve all patient tests\n 2-Retrieve all up normal patient tests\n 3-Retrieve all patient tests in a given specific period\n 4-Retrieve all patient tests based on test status"
+    printf "\n 1-Retrieve all patient tests\n 2-Retrieve all up normal patient tests\n 3-Retrieve all patient tests in a given specific period\n 4-Retrieve all patient tests based on test status\n"
 }
 
 Add(){ # Add a medical test
@@ -144,11 +115,11 @@ Add(){ # Add a medical test
 
     #echo -e "\n$Id:$Name,$Date,$Result,$unit,$Status" >> medicalRecord.txt
     printf "%s" "$(echo -e "\n$Id:$Name,$Date,$Result,$unit,$Status")" >> medicalRecord.txt # to remove new line with copy
-    printf "  record has been added successfully"
+    printf "\n  Record has been added successfully\n  "
 
 }
 
-Avg(){
+Avg(){      # Calculating Average function #
     while IFS= read -r line || [ -n "$line" ]; do
         symbol=$(echo "$line" | cut -d";" -f1 | cut -d"(" -f2 | cut -d")" -f1 | xargs)
         sum=0
@@ -168,11 +139,11 @@ Avg(){
         fi
     done < medicalTest.txt
 }
-
+            # Update Function #
 update(){
     while [ 0 -eq 0 ]
     do 
-        printf "\n enter patient ID: "
+        printf "\n Enter patient ID: "
         read id
         check_Id $id
         status=$?
@@ -187,7 +158,7 @@ update(){
     cat -n temp.txt
     while [ 0 -eq 0 ]
     do 
-        printf "\n choose a test: "
+        printf "\n Choose a test: "
         read choice
         if [ $choice -le "$(cat temp.txt | wc -l)" ] &&  [ $choice -gt 0 ]
         then
@@ -217,22 +188,32 @@ update(){
     printf "%s" "$(cat temp.txt)" > medicalRecord.txt # to remove new line with copy
 }
 
-search_id(){
+search_id(){        # Search for patient ID #
     while [ 0 -eq 0 ]
     do 
-        printf "\n enter patient ID: "
+        printf "\n Enter patient ID: "
         read id
         check_Id $id
+        
+        id_found=$(grep -i "$id" medicalRecord.txt)
+        if [ -z "$id_found" ]; then # handling if no ID found 
+        echo "  ID $id is not found !!"
+        return
+        fi
+
         status=$?
         if [ $status -eq 0 ]
         then 
             break
         fi 
+
+    
+
     done
     search_menu
     while [ 0 -eq 0 ]
     do 
-        printf "\n choose an option:  "
+        printf "\n Choose an option:  "
         read  choice
         case $choice in
             "1")
@@ -252,12 +233,12 @@ search_id(){
             break
             ;;
             *)
-            echo " invalid option !!";;
+            echo " Invalid option !!";;
         esac
     done
 
 }
-print_by_ID(){
+print_by_ID(){     
     id=$1
     printf "\n Patient tests are:\n"
     grep  "$id" medicalRecord.txt 
@@ -378,7 +359,7 @@ Abnormal_ID(){
 
 }
 
-search_Abnormal_by_testname(){
+search_Abnormal_by_testname(){  # Search Abnormal results by test name #
 
     while [ 0 -eq 0 ]
     do 
@@ -423,17 +404,17 @@ check_Id(){
     id=$(echo "$1" | xargs)
     id=$(echo "$id" | tr -d "\n")
     digits=$(echo "$id" | wc -c)
-  
+
     if [ $digits -ne 8 ] # don't forget null notation '\0'
     then
-        printf "\n Invalid ID"
+        printf "\n  Invalid ID\n "
         return 1
     fi
 
     if [[ $id =~ ^[0-9]+$ ]]; then
         return 0
     else
-        printf "\n Invalid ID"
+        printf "\n  Invalid ID\n "
         return 1
     fi
 }
@@ -450,7 +431,7 @@ check_name(){
     done
     if [ $flag -eq 0 ]
     then
-    printf "\n Invalid Test name"
+    printf "\n Invalid Test name ! \n"
     return 1
     fi
     return 0
@@ -464,23 +445,23 @@ check_date(){
 
     if [ "$(echo "$date" | wc -c)" -ne 8 ]
     then
-        printf "\nInvalid format ( YYYY-MM )" # YYYY-MM
+        printf "\n  Invalid format ( YYYY-MM )\n" # YYYY-MM
         return 1
     fi
     
     if [ -z "$month" ] || [[ ! $month =~ ^[0-9]+$ ]] || [[ ! $year =~ ^[0-9]+$ ]]; then
-        printf "\nInvalid format "
+        printf "\n  Invalid format\n "
         return 1
     fi
     #!!!!!!!!! check year 4 chars , month 2 chars
     if [ "$(echo "$year" | wc -c)" -ne 5 ] || [ "$(echo "$month" | wc -c)" -ne 3 ]
     then
-        printf "\nInvalid format"
+        printf "\n  Invalid format\n "
         return 1
     fi
     if [ "$year" -ge 2025 ] || [ "$year" -le 0 ] || [ "$month" -gt 12 ] || [ "$month" -le 0 ]
     then
-        printf "\nInvalid Date"
+        printf "\n  Invalid Date\n"
         return 1
     fi
 
@@ -498,7 +479,7 @@ check_result(){
     if [[ "$result" =~ ^[0-9]*\.[0-9]+$ ]] || [[ "$result" =~ ^[0-9]+\.[0-9]*$ ]]; then # check for a float with decimal point that is not negative
         return 0
     else
-        printf "\n Invalid result "
+        printf "\n  Invalid result \n"
         return 1
     fi
 
@@ -510,14 +491,14 @@ check_status(){
     then    
         return 0
     else 
-        printf "\n Invalid status "
+        printf "\n  Invalid status \n "
         return 1
     fi
 
 }
 
 
-##### code starts
+##### Code starts 
 while [ 0 -eq 0 ]
 do
     menu
@@ -544,17 +525,40 @@ do
         sleep 2
         ;;
         "6")
+            printf "\n Printing All Medical Records:\n"
             cat medicalRecord.txt
             echo ""
             sleep 3
             ;;
-        "7") exit
+        "7") printf "\n System Closed ... GOODBYE :) \n"
+        printf "\n"
+        exit
         ;;
         *)
-        echo " invalid option !!";;
+        echo " Invalid option !!";;
     esac
 
 done
 
 
-
+##### Keep it until we make sure we dont need it 
+# Read the file line by line
+# while IFS= read -r line; do
+#     PatientID=$(echo "$line" | cut -d":" -f1 | xargs)
+#     TestName=$(echo "$line" | cut -d":" -f2 | cut -d"," -f1 | xargs)
+#     Testdate=$(echo "$line" | cut -d":" -f2 | cut -d"," -f2 | xargs)
+#     PatientResult=$(echo "$line" | cut -d":" -f2 | cut -d"," -f3 | xargs)
+#     Testunit=$(echo "$line" | cut -d":" -f2 | cut -d"," -f4 | xargs)
+#     Teststatus=$(echo "$line" | cut -d":" -f2 | cut -d"," -f5 | xargs)
+# done < medicalRecord.txt
+# readMedicalTests(){
+#     while IFS= read -r line; do
+#     symbol=$(echo "$line" | cut -d";" -f1 | cut -d"(" -f2 | cut -d")" -f1 | xargs)
+#     TestName=$(echo "$line" | cut -d";" -f1 | cut -d"(" -f1 | xargs)
+#     upperRange=$(echo "$line" | sed -n 's/.*< \([0-9.]*\).*/\1/p')
+#     lowerRange=$(echo "$line" | sed -n 's/.*> \([0-9.]*\),.*/\1/p')
+#     Testunit=$(echo "$line" | cut -d":" -f2 | cut -d"," -f4 | xargs)
+#     # Declare an associative array for the person    
+#     # Serialize the associative array and store it in the main records array
+# done < medicalTest.txt
+# }
