@@ -1,8 +1,1 @@
-1300000:LDL,2024-03,444,mg/dl,completed
-1300001:BGT,2024-03,13.5,mg/dl,completed
-1300002:Hgb,2024-03,13.5,mg/dl,completed
-1300003:diastole,2024-04,13.5,mg/dl,completed
-1300003:systole,2024-03,3333,mg/dl,completed
-1300003:systole,2024-07,333,mg/dl,completed
-1300003:diastole,2022-04,135,mg/dl,completed
-1234567:ldl,2020-09,4444,mg/dL,pending
+2222222:bgt,2020-09,444,mg/dL,pending

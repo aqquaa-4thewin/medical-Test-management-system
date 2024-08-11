@@ -2,7 +2,7 @@
 
 #Shell scripting Project##
 #Prepared by:
-#Talin abu zulof 121
+#Talin abuzulof 1211061
 #Mayar Jafar 1210582
 #Section " "
 
@@ -153,24 +153,29 @@ update(){
         fi 
     done
 
-    grep  $id medicalRecord.txt > temp.txt
+    grep  "$id:" medicalRecord.txt > temp.txt
 
     if [ ! -s temp.txt ] ; then # check if file is empty !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         echo -e "\n no records for patient $id "
         return
     fi
 
-    printf "\n available tests are:\n"
+    printf "\n Available tests are:\n"
     cat -n temp.txt
     while [ 0 -eq 0 ]
     do 
         printf "\n Choose a test: "
         read choice
+        if ! [[ $choice =~ ^[0-9]+$ ]]; then
+            echo " Wrong input "
+            continue
+        fi 
+
         if [ $choice -le "$(cat temp.txt | wc -l)" ] &&  [ $choice -gt 0 ]
         then
         break
         fi
-        printf "\n Invalid Option"
+        printf "\n Invalid Option \n"
     done
 
     record=$(sed -n "${choice}p" temp.txt)
@@ -192,6 +197,7 @@ update(){
     grep -vF "$record" medicalRecord.txt > temp.txt
     echo "$newrecord" >> temp.txt
     printf "%s" "$(cat temp.txt)" > medicalRecord.txt # to remove new line with copy
+    printf "\n Result updated successfuly !\n"
 }
 
 search_id(){        # Search for patient ID #
@@ -201,11 +207,11 @@ search_id(){        # Search for patient ID #
         read id
         check_Id $id
         
-        id_found=$(grep -i "$id" medicalRecord.txt)
-        if [ -z "$id_found" ]; then # handling if no ID found 
-        echo "  ID $id is not found !!"
-        return
-        fi
+        # id_found=$(grep -i "$id" medicalRecord.txt)
+        # if [ -z "$id_found" ]; then # handling if no ID found 
+        # echo "  ID $id is not found !!"
+        # return
+        # fi
 
         status=$?
         if [ $status -eq 0 ]
@@ -254,7 +260,7 @@ search_id(){        # Search for patient ID #
 print_by_ID(){     
     id=$1
     printf "\n Patient tests are:\n"
-    grep  "$id" medicalRecord.txt 
+    grep  "$id:" medicalRecord.txt 
     
 
 }
@@ -262,7 +268,7 @@ print_by_ID(){
 
 print_by_status(){
     id=$1
-    grep  $id medicalRecord.txt > temp.txt
+    grep  "$id:" medicalRecord.txt > temp.txt
     while [ 0 -eq 0 ]
     do 
         printf "\nEnter status ( Pending ,  Completed ,  Reviewed ): "
@@ -275,7 +281,12 @@ print_by_status(){
             fi 
     done
 
-    if [ ! -s temp.txt ] ; then # check if file is empty
+    # if [ ! -s temp.txt ] ; then # check if file is empty
+    #     echo -e "\n no records for patient $id with status $status"
+    #     return
+    # fi
+    
+    if ! grep -q "$status" temp.txt; then #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         echo -e "\n no records for patient $id with status $status"
         return
     fi
@@ -286,7 +297,7 @@ print_by_status(){
 
 print_in_period(){
     id=$1
-    grep  $id medicalRecord.txt > temp.txt
+    grep  "$id:" medicalRecord.txt > temp.txt
     while [ 0 -eq 0 ]
     do 
         while [ 0 -eq 0 ]
@@ -308,6 +319,7 @@ print_in_period(){
         do 
             printf "\n Enter second Date: "
             read DateTo
+            check_date $DateTo
             stat=$?
                 if [ $stat -eq 0 ]
                 then 
@@ -335,10 +347,9 @@ print_in_period(){
          if [ "$Y" -lt "$YFrom" ] || [ "$Y" -gt "$YTo" ] ||
            { [ "$Y" -eq "$YFrom" ] && [ "$M" -lt "$MFrom" ]; } ||
            { [ "$Y" -eq "$YTo" ] && [ "$M" -gt "$MTo" ]; }; then
-            flag=0
             continue
         fi
-
+        flag=0
         echo "$line"
 
 
@@ -352,13 +363,14 @@ print_in_period(){
 
 Abnormal_ID(){
     id=$1
-    records=$(grep "^$id:" medicalRecord.txt)
+    records=$(grep "$id:" medicalRecord.txt)
     
     if [ -z "$records" ]; then # handling if no records found for patient
         echo "No records found for patient ID $id."
         return
     fi
     
+    flag=1
     echo "Abnormal tests for patient ID $id:"
     while IFS= read -r record; do # loop over record of patient
         test_name=$(echo "$record" | cut -d',' -f1 | cut -d':' -f2 |  tr '[:upper:]' '[:lower:]' | xargs) # test name
@@ -371,9 +383,14 @@ Abnormal_ID(){
 
           # compare test result with normal ranges of each test type, then print Abnormal
         if (( $(echo "$test_result < $lower_limit" | bc -l) )) || (( $(echo "$test_result > $upper_limit" | bc -l) )); then
+            flag=0
             echo "$record"
         fi
     done <<< "$records"
+
+    if [ $flag -eq 1 ]; then # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        echo "No upnormal test for patient $id  "
+    fi
 
 }
 
@@ -400,6 +417,7 @@ search_Abnormal_by_testname(){  # Search Abnormal results by test name #
 
     echo  " Abnormal tests for $name are:"
 
+    flag=1
     while IFS= read -r record; do # loop over record of patient
         test_name=$(echo "$record" | cut -d',' -f1 | cut -d':' -f2 | tr '[:upper:]' '[:lower:]' | xargs) # test name
         test_result=$(echo "$record" | cut -d',' -f3 | xargs) # test result
@@ -412,8 +430,12 @@ search_Abnormal_by_testname(){  # Search Abnormal results by test name #
           # compare test result with normal ranges of each test type, then print Abnormal
         if (( $(echo "$test_result < $lower_limit" | bc -l) )) || (( $(echo "$test_result > $upper_limit" | bc -l) )); then
             echo "$record"
+            flag=0
         fi
     done <<< "$records"
+     if [ $flag -eq 1 ]; then # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        echo "No up-normal test for test name $name "
+    fi
 
 }
 
@@ -505,7 +527,7 @@ check_result(){
 
 check_status(){
     status=$(echo "$1" | tr '[:upper:]' '[:lower:]' | xargs)
-    if [ "$status" = "completed" ] || [ "$status" = "pending" ] || [ "$status" = "reviwed" ]
+    if [ "$status" = "completed" ] || [ "$status" = "pending" ] || [ "$status" = "reviewed" ]
     then    
         return 0
     else 
@@ -550,6 +572,7 @@ do
             ;;
         "7") printf "\n System Closed ... GOODBYE :) \n"
         printf "\n"
+        rm -r temp.txt
         exit
         ;;
         *)
