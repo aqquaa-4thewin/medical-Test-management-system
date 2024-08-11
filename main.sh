@@ -124,7 +124,7 @@ Avg(){      # Calculating Average function #
         symbol=$(echo "$line" | cut -d";" -f1 | cut -d"(" -f2 | cut -d")" -f1 | xargs)
         sum=0
         count=0
-        grep $symbol medicalRecord.txt > temp.txt
+        grep "$symbol" medicalRecord.txt > temp.txt
         while IFS= read -r record; do
             PatientResult=$(echo "$record" | cut -d":" -f2 | cut -d"," -f3 | xargs)
             sum=$(echo "$sum + $PatientResult" | bc)
@@ -154,6 +154,12 @@ update(){
     done
 
     grep  $id medicalRecord.txt > temp.txt
+
+    if [ ! -s temp.txt ] ; then # check if file is empty !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        echo -e "\n no records for patient $id "
+        return
+    fi
+
     printf "\n available tests are:\n"
     cat -n temp.txt
     while [ 0 -eq 0 ]
@@ -210,7 +216,14 @@ search_id(){        # Search for patient ID #
     
 
     done
+
+    if ! grep -q "$id" medicalRecord.txt; then #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        echo "No matches found for $id"
+        return
+    fi
+
     search_menu
+
     while [ 0 -eq 0 ]
     do 
         printf "\n Choose an option:  "
@@ -315,13 +328,14 @@ print_in_period(){
 
 
 
-
+    flag=1
     while IFS= read -r line; do
         Y=$(echo "$line" | cut -d":" -f2 | cut -d"," -f2 | xargs | cut -d"-" -f1)
         M=$(echo "$line" | cut -d":" -f2 | cut -d"," -f2 | xargs | cut -d"-" -f2)
          if [ "$Y" -lt "$YFrom" ] || [ "$Y" -gt "$YTo" ] ||
            { [ "$Y" -eq "$YFrom" ] && [ "$M" -lt "$MFrom" ]; } ||
            { [ "$Y" -eq "$YTo" ] && [ "$M" -gt "$MTo" ]; }; then
+            flag=0
             continue
         fi
 
@@ -329,6 +343,10 @@ print_in_period(){
 
 
     done < temp.txt
+
+    if [ $flag -eq 1 ]; then # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        echo "no records for patient $id from $DateFrom to $DateTo "
+    fi
 
 }
 
