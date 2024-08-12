@@ -42,7 +42,8 @@ menu(){
     echo " 4- Find average test value for a test type"
     echo " 5- Update a test"
     echo " 6- Print All"
-    echo " 7- Exit"
+    echo " 7- Delete"
+    echo " 8- Exit"
 }
 
 search_menu(){
@@ -113,7 +114,7 @@ Add(){ # Add a medical test
 
     unit=$(grep -i "$Name" medicalTest.txt | cut -d":" -f4 | xargs) # -i greps regardless of upper or lower cases
 
-    #echo -e "\n$Id:$Name,$Date,$Result,$unit,$Status" >> medicalRecord.txt
+    
     printf "%s" "$(echo -e "\n$Id:$Name,$Date,$Result,$unit,$Status")" >> medicalRecord.txt # to remove new line with copy
     printf "\n  Record has been added successfully\n  "
 
@@ -155,7 +156,7 @@ update(){
 
     grep  "$id:" medicalRecord.txt > temp.txt
 
-    if [ ! -s temp.txt ] ; then # check if file is empty !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if [ ! -s temp.txt ] ; then # check if file is empty
         echo -e "\n no records for patient $id "
         return
     fi
@@ -223,7 +224,7 @@ search_id(){        # Search for patient ID #
 
     done
 
-    if ! grep -q "$id" medicalRecord.txt; then #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if ! grep -q "$id" medicalRecord.txt; then # check if patient id exist
         echo "No matches found for $id"
         return
     fi
@@ -281,12 +282,8 @@ print_by_status(){
             fi 
     done
 
-    # if [ ! -s temp.txt ] ; then # check if file is empty
-    #     echo -e "\n no records for patient $id with status $status"
-    #     return
-    # fi
     
-    if ! grep -q "$status" temp.txt; then #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if ! grep -q "$status" temp.txt; then # check if status exists for that specific id
         echo -e "\n no records for patient $id with status $status"
         return
     fi
@@ -388,7 +385,7 @@ Abnormal_ID(){
         fi
     done <<< "$records"
 
-    if [ $flag -eq 1 ]; then # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if [ $flag -eq 1 ]; then # check if there are no Abnormal tests for patient id
         echo "No upnormal test for patient $id  "
     fi
 
@@ -433,7 +430,7 @@ search_Abnormal_by_testname(){  # Search Abnormal results by test name #
             flag=0
         fi
     done <<< "$records"
-     if [ $flag -eq 1 ]; then # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     if [ $flag -eq 1 ]; then # check that there are no Abnormal tests for a specific test name
         echo "No up-normal test for test name $name "
     fi
 
@@ -451,7 +448,7 @@ check_Id(){
         return 1
     fi
 
-    if [[ $id =~ ^[0-9]+$ ]]; then
+    if [[ $id =~ ^[0-9]+$ ]]; then # check if id is all digits ( no characters )
         return 0
     else
         printf "\n  Invalid ID\n "
@@ -538,6 +535,54 @@ check_status(){
 }
 
 
+delete(){
+    while [ 0 -eq 0 ]
+    do 
+        printf "\n Enter patient ID: "
+        read id
+        check_Id $id
+        status=$?
+        if [ $status -eq 0 ]
+        then 
+            break
+        fi 
+    done
+
+    grep  "$id:" medicalRecord.txt > temp.txt
+
+    if [ ! -s temp.txt ] ; then # check if file is empty 
+        echo -e "\n no records for patient $id "
+        return
+    fi
+
+    printf "\n Available tests are:\n"
+    cat -n temp.txt
+    while [ 0 -eq 0 ]
+    do 
+        printf "\n Choose a test to delete: "
+        read choice
+        if ! [[ $choice =~ ^[0-9]+$ ]]; then
+            echo " Wrong input "
+            continue
+        fi 
+
+        if [ $choice -le "$(cat temp.txt | wc -l)" ] &&  [ $choice -gt 0 ]
+        then
+        break
+        fi
+        printf "\n Invalid Option \n"
+    done
+
+    record=$(sed -n "${choice}p" temp.txt)
+    
+
+    grep -vF "$record" medicalRecord.txt > temp.txt # take everything except the record and put it in file
+   
+    printf "%s" "$(cat temp.txt)" > medicalRecord.txt # to remove new line with copy
+    printf "\n Record deleted successfuly !\n"
+}
+
+
 ##### Code starts 
 while [ 0 -eq 0 ]
 do
@@ -545,36 +590,49 @@ do
     read x
     case $x in
         "1")
-        Add
-        sleep 2
+            Add
+            sleep 2
         ;;
+
         "2")
-        search_id
-        sleep 2
+            search_id
+            sleep 2
         ;;
+
         "3")
-        search_Abnormal_by_testname
-        sleep 2
+            search_Abnormal_by_testname
+            sleep 2
         ;;
+
         "4")
         Avg
-        sleep 2
+            sleep 2
         ;;
+
         "5")
-        update
-        sleep 2
+            update
+            sleep 2
         ;;
+
         "6")
             printf "\n Printing All Medical Records:\n"
             cat medicalRecord.txt
             echo ""
-            sleep 3
-            ;;
-        "7") printf "\n System Closed ... GOODBYE :) \n"
-        printf "\n"
-        rm -r temp.txt
-        exit
+            sleep 2
         ;;
+
+        "7") 
+            delete
+            sleep 2
+        ;;
+
+        "8")
+            printf "\n System Closed ... GOODBYE :) \n"
+            printf "\n"
+            rm -r temp.txt
+            exit
+        ;;
+
         *)
         echo " Invalid option !!";;
     esac
@@ -582,24 +640,3 @@ do
 done
 
 
-##### Keep it until we make sure we dont need it 
-# Read the file line by line
-# while IFS= read -r line; do
-#     PatientID=$(echo "$line" | cut -d":" -f1 | xargs)
-#     TestName=$(echo "$line" | cut -d":" -f2 | cut -d"," -f1 | xargs)
-#     Testdate=$(echo "$line" | cut -d":" -f2 | cut -d"," -f2 | xargs)
-#     PatientResult=$(echo "$line" | cut -d":" -f2 | cut -d"," -f3 | xargs)
-#     Testunit=$(echo "$line" | cut -d":" -f2 | cut -d"," -f4 | xargs)
-#     Teststatus=$(echo "$line" | cut -d":" -f2 | cut -d"," -f5 | xargs)
-# done < medicalRecord.txt
-# readMedicalTests(){
-#     while IFS= read -r line; do
-#     symbol=$(echo "$line" | cut -d";" -f1 | cut -d"(" -f2 | cut -d")" -f1 | xargs)
-#     TestName=$(echo "$line" | cut -d";" -f1 | cut -d"(" -f1 | xargs)
-#     upperRange=$(echo "$line" | sed -n 's/.*< \([0-9.]*\).*/\1/p')
-#     lowerRange=$(echo "$line" | sed -n 's/.*> \([0-9.]*\),.*/\1/p')
-#     Testunit=$(echo "$line" | cut -d":" -f2 | cut -d"," -f4 | xargs)
-#     # Declare an associative array for the person    
-#     # Serialize the associative array and store it in the main records array
-# done < medicalTest.txt
-# }

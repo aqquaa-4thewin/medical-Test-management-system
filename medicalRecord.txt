@@ -5,6 +5,5 @@
 1300003:systole,2024-03,2222222,mg/dl,completed
 1300003:systole,2024-07,333,mg/dl,completed
 1300003:diastole,2022-04,135,mg/dl,completed
-1234567:ldl,2020-09,4444,mg/dL,pending
 1111111:hgb,2023-09,44.444,g/dL,reviewed
 2222222:bgt,2020-09,444,mg/dL,pending
